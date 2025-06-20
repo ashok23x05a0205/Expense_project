@@ -11,17 +11,14 @@
 		body {
 			background-color: #f8f9fa;
 		}
-
 		.card {
 			border: none;
 			box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 		}
-
 		.detail-row {
 			border-bottom: 1px solid #dee2e6;
 			padding: 1rem 0;
 		}
-
 		.detail-row:last-child {
 			border-bottom: none;
 		}
@@ -36,7 +33,7 @@
 				Expense Reimbursement System
 			</a>
 			<div class="navbar-nav ms-auto">
-				<span class="navbar-text me-3">Welcome, John Manager (Manager)</span>
+				<span class="navbar-text me-3" th:text="|Welcome, ${session.loggedInUser.name} (Manager)|">Welcome</span>
 				<a class="nav-link" href="/logout">
 					<i class="fas fa-sign-out-alt"></i> Logout
 				</a>
@@ -52,15 +49,17 @@
 						<h5 class="mb-0">
 							<i class="fas fa-eye me-2"></i>Expense Details - Manager Review
 						</h5>
-						<span class="badge fs-6 bg-warning">PENDING</span>
+						<span class="badge fs-6"
+							th:classappend="${expense.status.name() == 'PENDING'} ? 'bg-warning' : (${expense.status.name() == 'APPROVED'} ? 'bg-success' : 'bg-danger')"
+							th:text="${expense.status}">PENDING</span>
 					</div>
 					<div class="card-body">
 						<div class="detail-row">
 							<div class="row">
 								<div class="col-md-3"><strong>Employee:</strong></div>
 								<div class="col-md-9">
-									<span>Jane Doe</span><br />
-									<small class="text-muted">Finance Department</small>
+									<span th:text="${expense.employee.name}">Employee Name</span><br />
+									<small class="text-muted" th:text="${expense.employee.department}">Department</small>
 								</div>
 							</div>
 						</div>
@@ -68,7 +67,7 @@
 						<div class="detail-row">
 							<div class="row">
 								<div class="col-md-3"><strong>Description:</strong></div>
-								<div class="col-md-9">Client meeting travel expense</div>
+								<div class="col-md-9" th:text="${expense.description}">Expense Description</div>
 							</div>
 						</div>
 
@@ -76,7 +75,7 @@
 							<div class="row">
 								<div class="col-md-3"><strong>Amount:</strong></div>
 								<div class="col-md-9">
-									<span class="h5 text-success">$325.00</span>
+									<span class="h5 text-success" th:text="'₹' + ${#numbers.formatDecimal(expense.amount, 1, 2)}">₹0.00</span>
 								</div>
 							</div>
 						</div>
@@ -84,7 +83,7 @@
 						<div class="detail-row">
 							<div class="row">
 								<div class="col-md-3"><strong>Expense Date:</strong></div>
-								<div class="col-md-9">June 03, 2025</div>
+								<div class="col-md-9" th:text="${#temporals.format(expense.expenseDate, 'MMMM dd, yyyy')}">June 03, 2025</div>
 							</div>
 						</div>
 
@@ -92,7 +91,7 @@
 							<div class="row">
 								<div class="col-md-3"><strong>Category:</strong></div>
 								<div class="col-md-9">
-									<span class="badge bg-secondary">Travel</span>
+									<span class="badge bg-secondary" th:text="${expense.category}">Category</span>
 								</div>
 							</div>
 						</div>
@@ -100,26 +99,25 @@
 						<div class="detail-row">
 							<div class="row">
 								<div class="col-md-3"><strong>Submitted:</strong></div>
-								<div class="col-md-9">June 04, 2025 at 10:15 AM</div>
+								<div class="col-md-9" th:text="${#temporals.format(expense.submittedAt, 'MMMM dd, yyyy ''at'' hh:mm a')}">Submitted Date</div>
 							</div>
 						</div>
 
-						<div class="detail-row">
+						<div class="detail-row" th:if="${expense.comments}">
 							<div class="row">
 								<div class="col-md-3"><strong>Comments:</strong></div>
-								<div class="col-md-9">Please review attached travel bill</div>
+								<div class="col-md-9" th:text="${expense.comments}">Employee comments</div>
 							</div>
 						</div>
 
-						<div class="detail-row">
+						<div class="detail-row" th:if="${expense.receiptFileName}">
 							<div class="row">
 								<div class="col-md-3"><strong>Receipt:</strong></div>
 								<div class="col-md-9">
 									<div class="d-flex align-items-center">
 										<i class="fas fa-paperclip me-2"></i>
-										<span>travel-bill.pdf</span>
-										<a href="/receipts/travel-bill.pdf" class="btn btn-sm btn-outline-primary ms-2"
-											download>
+										<span th:text="${expense.receiptFileName}">receipt.pdf</span>
+										<a th:href="@{'/receipts/' + ${expense.receiptFileName}}" class="btn btn-sm btn-outline-primary ms-2" download>
 											<i class="fas fa-download"></i> Download
 										</a>
 									</div>
@@ -134,13 +132,13 @@
 								</a>
 
 								<div class="ms-auto">
-									<form action="/manager/expense/123/approve" method="post" style="display: inline;">
+									<form th:action="@{'/manager/expense/' + ${expense.id} + '/approve'}" method="post" style="display: inline;">
 										<button type="submit" class="btn btn-success me-2"
 											onclick="return confirm('Are you sure you want to approve this expense?')">
 											<i class="fas fa-check me-2"></i>Approve
 										</button>
 									</form>
-									<form action="/manager/expense/123/reject" method="post" style="display: inline;">
+									<form th:action="@{'/manager/expense/' + ${expense.id} + '/reject'}" method="post" style="display: inline;">
 										<button type="submit" class="btn btn-danger"
 											onclick="return confirm('Are you sure you want to reject this expense?')">
 											<i class="fas fa-times me-2"></i>Reject
@@ -149,6 +147,17 @@
 								</div>
 							</div>
 						</div>
+
+						<div class="detail-row mt-4" th:if="${expense.approvedBy != null}">
+							<div class="row">
+								<div class="col-md-3"><strong>Processed by:</strong></div>
+								<div class="col-md-9">
+									<span th:text="${expense.approvedBy.name}">Manager Name</span><br />
+									<small class="text-muted" th:text="${#temporals.format(expense.approvedAt, 'MMMM dd, yyyy ''at'' hh:mm a')}">Approved At</small>
+								</div>
+							</div>
+						</div>
+
 					</div>
 				</div>
 			</div>
